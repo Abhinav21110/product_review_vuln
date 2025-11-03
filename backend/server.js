@@ -10,13 +10,26 @@ const express = require('express');
 const cors = require('cors');
 const sqlite3 = require('sqlite3').verbose();
 const crypto = require('crypto');
+const path = require('path');
+const fs = require('fs');
 
 const app = express();
-const PORT = 3000;
-const HOST = '127.0.0.1'; // localhost only
+const PORT = process.env.PORT || 3000;
+const HOST = process.env.HOST || '0.0.0.0';
 
 app.use(cors());
 app.use(express.json());
+
+// If a built frontend exists in `backend/public`, serve it as static files
+const staticPath = path.join(__dirname, 'public');
+if (fs.existsSync(staticPath)) {
+  app.use(express.static(staticPath));
+
+  // SPA fallback: serve index.html for any non-API route
+  app.get(/^(?!\/api).*/, (req, res) => {
+    res.sendFile(path.join(staticPath, 'index.html'));
+  });
+}
 
 // Initialize database
 const db = new sqlite3.Database(':memory:');
@@ -135,7 +148,7 @@ db.serialize(() => {
   console.log('Medium:', FLAGS.medium);
   console.log('Hard:  ', FLAGS.hard);
   console.log('\n⚠️  DO NOT EXPOSE TO INTERNET ⚠️');
-  console.log('Listening on http://127.0.0.1:3000');
+  console.log(`Listening on http://${HOST}:${PORT}`);
   console.log('=================================\n');
 });
 
